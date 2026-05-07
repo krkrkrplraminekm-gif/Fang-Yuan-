@@ -6,9 +6,9 @@ module.exports = {
   config: {
     name: "owner",
     version: "1.3.0",
-    author: "Mᴏʜᴀᴍᴍᴀᴅ Aᴋᴀsʜ",
+    author: "Amin",
     role: 0,
-    shortDescription: "Owner information with image",
+    shortDescription: "معلومات مطور البوت",
     category: "Information",
     guide: {
       en: "owner"
@@ -16,27 +16,27 @@ module.exports = {
   },
 
   onStart: async function ({ api, event }) {
+    // نص المعلومات مزخرف وبالعربية
     const ownerText = 
-`╭─ 👑 Oᴡɴᴇʀ Iɴғᴏ 👑 ─╮
-│ 👤 Nᴀᴍᴇ       : Mᴏʜᴀᴍᴍᴀᴅ Aᴋᴀsʜ
-│ 🧸 Nɪᴄᴋ       : Aᴋᴀsʜ
-│ 🎂 Aɢᴇ        : 18+
-│ 💘 Rᴇʟᴀᴛɪᴏɴ : Sɪɴɢʟᴇ
-│ 🎓 Pʀᴏғᴇssɪᴏɴ : Sᴛᴜᴅᴇɴᴛ
-│ 📚 Eᴅᴜᴄᴀᴛɪᴏɴ : Iɴᴛᴇʀ 2ɴᴅ Yᴇᴀʀ
-│ 🏡 Lᴏᴄᴀᴛɪᴏɴ : 𝐃𝐡𝐚𝐤𝐚 - 𝐆𝐚𝐳𝐢𝐩𝐮𝐫
-├─ 🔗 Cᴏɴᴛᴀᴄᴛ ─╮
-│ 📘 Facebook  : fb.com/akashx404 
-│ 💬 Messenger: m.me/akashx404 
-│ 📞 WhatsApp  : wa.me/01933165880
+`╭─ 👑 مـعـلـومـات الـمـطـور 👑 ─╮
+│ 👤 الاسـم       : 𝐀𝐦𝐢𝐧
+│ 🤖 الـبـوت       : 𝐘𝐮𝐚𝐧 𝐁𝐨𝐭
+│ 🎂 الـعـمـر       : 18+
+│ 🏠 الـسـكـن     : الخاص
+│ 🎓 الـمـهـنـة     : مـطـور سـكـريـبـتـات
+│ 💘 الـحـالـة      : سـنـجـل 😉
+├─ 🔗 روابـط الـتـواصـل ─╮
+│ 📘 فـيـسـبـوك   : fb.com/profile.php?id=61578796876651 
+│ 💬 مـاسـنـجـر   : m.me/61578796876651 
 ╰────────────────╯`;
 
     const cacheDir = path.join(__dirname, "cache");
-    const imgPath = path.join(cacheDir, "owner.jpg");
+    const imgPath = path.join(cacheDir, "owner_photo.jpg");
 
     if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
 
-    const imgLink = "https://i.imgur.com/1G4ZhU7.jpeg";
+    // يمكنك تغيير الرابط أدناه برابط صورتك الشخصية (ارفعها على Imgur وضع الرابط هنا)
+    const imgLink = "https://i.imgur.com/v8tT9D9.jpeg"; 
 
     const send = () => {
       api.sendMessage(
@@ -45,13 +45,20 @@ module.exports = {
           attachment: fs.createReadStream(imgPath)
         },
         event.threadID,
-        () => fs.unlinkSync(imgPath),
+        () => {
+          if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+        },
         event.messageID
       );
     };
 
+    // تحميل الصورة وإرسالها مع النص
     request(encodeURI(imgLink))
       .pipe(fs.createWriteStream(imgPath))
-      .on("close", send);
+      .on("close", send)
+      .on("error", (err) => {
+        // في حال فشل تحميل الصورة يرسل النص فقط
+        api.sendMessage(ownerText, event.threadID, event.messageID);
+      });
   }
 };
