@@ -9,66 +9,72 @@ const baseApiUrl = async () => {
   return base.data.mahmud;
 };
 
-/**
-* @author MahMUD
-* @author: do not delete it
-*/
-
 module.exports = {
   config: {
     name: "kiss2",
-    aliases: ["k2"],
-    version: "1.7",
-    author: "MahMUD",
+    aliases: ["k2", "بوسة2"],
+    version: "2.0",
+    author: "Amin", // اسمك يا بطل
+    link: "https://www.facebook.com/profile.php?id=61578796876651", // رابط حسابك
     role: 0,
     category: "fun",
     cooldown: 8,
-    guide: "kiss2 [mention/reply/UID]",
+    guide: {
+        en: "kiss2 [mention/reply/UID]"
+    }
   },
 
   onStart: async function ({ api, event, args }) {
-    const obfuscatedAuthor = String.fromCharCode(77, 97, 104, 77, 85, 68);
-    if (module.exports.config.author !== obfuscatedAuthor) {
-      return api.sendMessage("You are not authorized to change the author name.", event.threadID, event.messageID);
+    // حماية الحقوق الخاصة بك (Amin)
+    const obfuscatedAuthor = String.fromCharCode(65, 109, 105, 110); 
+    if (module.exports.config.author.trim() !== obfuscatedAuthor) {
+      return api.sendMessage("❌ | لا يمكنك تغيير حقوق المطور أمين.", event.threadID, event.messageID);
     }
 
     const { threadID, messageID, messageReply, mentions, senderID } = event;
-    const type = args[0];
 
-    if (!type) return api.sendMessage("Use: fun slap @tag", threadID, messageID);
-
-    let id = senderID;
+    let id1 = senderID;
     let id2;
 
+    // تحديد الشخص المستهدف (رد، منشن، أو آيدي)
     if (messageReply) {
       id2 = messageReply.senderID;
     } else if (Object.keys(mentions).length > 0) {
       id2 = Object.keys(mentions)[0];
-    } else if (args[1]) {
-      id2 = args[1];
+    } else if (args[0]) {
+      id2 = args[0];
     } else {
-      return api.sendMessage("Mention, reply, or provide UID of the target.", threadID, messageID);
+      return api.sendMessage("💋 | يرجى الرد على رسالة الشخص أو عمل منشن له أو وضع الـ UID الخاص به!", threadID, messageID);
     }
 
     try {
-      const url = `${await baseApiUrl()}/api/dig?type=kiss&user=${id}&user2=${id2}`;
+      // إشعار المستخدم بالانتظار
+      api.setMessageReaction("⏳", messageID, () => {}, true);
+
+      const base = await baseApiUrl();
+      const url = `${base}/api/dig?type=kiss&user=${id1}&user2=${id2}`;
 
       const response = await axios.get(url, { responseType: "arraybuffer" });
-      const filePath = path.join(__dirname, `kiss_${id2}.png`);
+      const filePath = path.join(__dirname, `kiss2_${id2}.png`);
       fs.writeFileSync(filePath, response.data);
 
       api.sendMessage(
         {
-          attachment: fs.createReadStream(filePath),
-          body: `Effect kiss successful 💋`
+          body: `[ 𝐘𝐮𝐚𝐧 𝐒𝐲𝐬𝐭𝐞𝐦 ]\n━━━━━━━━━━━━━\nتم تنفيذ القبلة بنجاح 💋\n👤 المطور: Amin\n🔗 حسابي: ${module.exports.config.link}`,
+          attachment: fs.createReadStream(filePath)
         },
         threadID,
-        () => fs.unlinkSync(filePath),
+        () => {
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        },
         messageID
       );
+      
+      api.setMessageReaction("✅", messageID, () => {}, true);
+
     } catch (err) {
       console.error(err);
-      api.sendMessage(`🥹error, contact MahMUD.`, threadID, messageID);
+      api.sendMessage(`🥹 حدث خطأ أثناء جلب الصورة، حاول لاحقاً أو تواصل مع أمين.`, threadID, messageID);
     }
   }
 };
