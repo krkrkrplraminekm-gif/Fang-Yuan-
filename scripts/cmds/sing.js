@@ -1,17 +1,15 @@
-const A = require("axios");
+const play = require("play-dl");
 const B = require("fs-extra");
 const C = require("path");
-const S = require("yt-search");
+const fs = require("fs"); 
 
 const p = C.join(__dirname, "cache", `${Date.now()}.mp3`);
-
-const nix = "https://raw.githubusercontent.com/aryannix/stuffs/master/raw/apis.json";
 
 module.exports = {
   config: {
     name: "sing",
     aliases: ["song", "music", "play"],
-    version: "0.0.1",
+    version: "0.0.2",
     author: "ArYAN",
     countDown: 10,
     role: 0,
@@ -26,28 +24,29 @@ module.exports = {
     api.setMessageReaction("⏳", m, () => {}, true);
 
     try {
-      const D = await A.get(nix);
-      const E = D.data.api;
-      
-      let u = q;
+      let videoUrl = q;
+
+      // 🔍 إذا لم يكن المدخل رابطاً، نبحث عنه في يوتيوب
       if (!q.startsWith("http")) {
-        const r = await S(q);
-        const v = r.videos[0];
-        if (!v) throw new Error("Error ytdl issue 🧘");
-        u = v.url;
+        const searchResults = await play.search(q, { limit: 1 });
+        if (!searchResults || searchResults.length === 0) throw new Error("لم يتم العثور على الأغنية 🧘");
+        videoUrl = searchResults[0].url;
       }
 
-      const F = await A.get(`${E}/ytdl`, {
-        params: { url: u, type: "audio" }
+      // 🎧 جلب بيانات الفيديو ورابط البث المباشر للصوت فقط
+      const videoInfo = await play.video_info(videoUrl);
+      const title = videoInfo.video_details.title || "Song";
+      const stream = await play.stream(videoUrl, { filter: "audioonly" });
+
+      // 📂 حفظ ملف الصوت في التخزين المؤقت (Cache) تدريجياً
+      const writeStream = fs.createWriteStream(p);
+      stream.stream.pipe(writeStream);
+
+      // ⏳ الانتظار حتى يكتمل تحميل الملف بالكامل قبل إرساله
+      await new Promise((resolve, reject) => {
+        writeStream.on("finish", resolve);
+        writeStream.on("error", reject);
       });
-
-      if (!F.data.status || !F.data.downloadUrl) throw new Error("API Error");
-
-      const DL = F.data.downloadUrl;
-      const title = F.data.title || "Song";
-
-      const res = await A.get(DL, { responseType: "arraybuffer" });
-      await B.outputFile(p, Buffer.from(res.data));
 
       api.setMessageReaction("✅", m, () => {}, true);
 
@@ -60,6 +59,7 @@ module.exports = {
 
     } catch (e) {
       api.setMessageReaction("❌", m, () => {}, true);
+      if (B.existsSync(p)) B.unlinkSync(p); // تنظيف الملف لو حدث خطأ أثناء التحميل
       return api.sendMessage(`❌ Error: ${e.message}`, t, m);
     }
   }
